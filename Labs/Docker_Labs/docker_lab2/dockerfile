@@ -1,0 +1,41 @@
+#Build and Train the Model
+FROM python:3.11-slim AS model_training
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+#training
+COPY src/model_training.py .
+RUN python model_training.py   # writes models/iris_cv_best_*.joblib + metrics/*
+
+#Serve Predictions
+FROM python:3.11-slim AS serving
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+ENV NAME=World
+
+# deps (same small set)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# copy trained artifacts
+COPY --from=model_training /app/models ./models
+COPY --from=model_training /app/metrics ./metrics
+
+# app code + assets
+COPY src/main.py ./main.py
+COPY src/templates ./templates
+COPY src/statics ./statics
+
+EXPOSE 4000
+CMD ["python", "main.py"]
