@@ -18,6 +18,7 @@ google-cloud-sdk/
 *.tar.gz
 *.json
 *.pdf
+*.zip
 
 # Distribution / packaging
 .Python
