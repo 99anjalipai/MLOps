@@ -1,4 +1,4 @@
-# **Lab 1: Data Storage and Warehouse using Google Cloud (GCP)**
+#----------------------------------------------------------------------------------------
 
 # LAB SUBMISSION CHANGES IMPLEMENTED
 
@@ -32,8 +32,9 @@ Lifecycle policy behavior:
 - Initialized DVC without SCM (dvc init --no-scm) for standalone lab use.
 - Added GCS as the default remote
 - Tracked and pushed the processed dataset.
+#-------------------------------------------------------------------------------------------------
 
-
+# **Lab 1: Data Storage and Warehouse using Google Cloud (GCP)**
 ## **Set Up Google Cloud Storage (GCS) Bucket**
 
 ### **What is GCS?**
