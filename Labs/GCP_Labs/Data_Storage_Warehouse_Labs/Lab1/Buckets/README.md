@@ -1,6 +1,38 @@
 # **Lab 1: Data Storage and Warehouse using Google Cloud (GCP)**
 
----
+# LAB SUBMISSION CHANGES IMPLEMENTED
+
+### 1. Data Preprocessing Script (preprocess_data.py)
+Introduced an automated preprocessing stage that loads the Titanic dataset from seaborn, performs basic cleaning, and prepares it for cloud storage.
+
+Key steps implemented:
+- Dropped irrelevant columns and standardized text to lowercase.
+- Imputed missing values for age (median) and embarked (mode).
+- Converted boolean columns to integers for warehouse compatibility.
+- Added a derived feature family_size = sibsp + parch + 1.
+
+The processed dataset is saved locally as:
+```bash
+data/preprocessed_data.csv
+```
+The script then uploads the file to the existing GCS bucket:
+```bash
+gs://gcp-lab-bucket-anjali/processed/preprocessed_data.csv
+```
+### 2. Object Lifecycle Management (lifecycle.json)
+
+Added lifecycle rules to manage object storage cost and retention efficiently:
+Lifecycle policy behavior:
+- Moves processed data older than 30 days from STANDARD → NEARLINE storage class.
+- Automatically deletes processed objects after 120 days.
+- Removes noncurrent versions after 7 days or when 3 newer versions exist.
+
+### 3. Integrated DVC
+
+- Initialized DVC without SCM (dvc init --no-scm) for standalone lab use.
+- Added GCS as the default remote
+- Tracked and pushed the processed dataset.
+
 
 ## **Set Up Google Cloud Storage (GCS) Bucket**
 

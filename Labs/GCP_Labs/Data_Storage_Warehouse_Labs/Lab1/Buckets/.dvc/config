@@ -1,0 +1,6 @@
+[core]
+    no_scm = True
+    remote = gcsremote
+['remote "gcsremote"']
+    url = gs://gcp-lab-bucket-anjali
+    credentialpath = C:\Users\91994\Downloads\disco-history-342308-faa33021c34e.json
