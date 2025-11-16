@@ -1,4 +1,4 @@
-## Modifications specific to the LLM data pipeline:
+## Executed Lab 1 with the following modifications to the LLM data pipeline:
 
 - Added an explicit train–validation split on WikiText-2 so the tokenization and sequence-building pipeline produces both training and held-out evaluation data.
 - Changed the sequence-grouping step from simple non-overlapping blocks to a sliding-window chunking strategy with overlap, which is a common technique in LLM pretraining to expose tokens to multiple contexts.
