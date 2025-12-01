@@ -1,3 +1,20 @@
+# CHANGES IMPLEMENTED
+
+- Replaced synthetic data (make_classification) with the Breast Cancer Wisconsin dataset from scikit-learn.
+- Saved dataset to pickle files (data/data.pickle, data/target.pickle) for consistent reuse by both training and evaluation scripts.
+- Added a proper train/test split with stratification to evaluate generalization performance.
+- Switched from DecisionTree to a RandomForest model for improved accuracy and stability.
+- Implemented a preprocessing + model Pipeline using StandardScaler + RandomForestClassifier.
+- Added hyperparameters (max_depth, n_estimators) with command-line arguments for more realistic experimentation.
+- Implemented threshold tuning by scanning thresholds from 0.1 → 0.9 to log best F1 score.
+- Improved MLflow logging to track dataset metadata, hyperparameters, metrics, and experiment configuration.
+- Updated evaluation script to load the same dataset from pickle instead of generating new random data.
+- Evaluation script now performs train/test split identical to training for consistent scoring.
+- Ensured compatibility model is saved as model_<timestamp>_dt_model.joblib for the GitHub Actions workflow.
+- Automatically created workflow destination folders (Labs/Github_Labs/Lab2/models, .../metrics) using GITHUB_WORKSPACE.
+- Ensured all metrics JSON files are saved as <timestamp>_metrics.json in the working directory so the workflow can move them successfully.
+- Kept the YAML workflow unchanged by adapting Python scripts instead of modifying CI logic.
+
 # Using GitHub Actions for Model Training and Versioning
 
 This repository demonstrates how to use GitHub Actions to automate the process of training a machine learning model, storing the model, and versioning it. This allows you to easily update and improve your model in a collaborative environment.
