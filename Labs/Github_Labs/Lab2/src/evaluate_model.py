@@ -78,11 +78,9 @@ if __name__ == "__main__":
 
     print(f"[INFO] Evaluation metrics: {metrics}")
 
-    # ----------------- 6) Save metrics to JSON in metrics/ -----------------
-    os.makedirs("metrics", exist_ok=True)
 
-    metrics_path = os.path.join("metrics", f"{timestamp}_metrics.json")
-    with open(metrics_path, "w") as metrics_file:
+    metrics_filename = f"{timestamp}_metrics.json"
+    with open(metrics_filename, "w") as metrics_file:
         json.dump(metrics, metrics_file, indent=4)
 
-    print(f"[INFO] Saved metrics to: {metrics_path}")
+    print(f"[INFO] Saved metrics to: {metrics_filename}")
