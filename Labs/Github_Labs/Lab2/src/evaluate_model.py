@@ -6,6 +6,7 @@ import argparse
 
 import joblib
 from sklearn.metrics import f1_score, accuracy_score
+from sklearn.datasets import load_breast_cancer
 from sklearn.model_selection import train_test_split
 
 sys.path.insert(0, os.path.abspath(".."))
@@ -17,39 +18,49 @@ if __name__ == "__main__":
         "--timestamp",
         type=str,
         required=True,
-        help="Timestamp from GitHub Actions to locate the correct model",
+        help="Timestamp from GitHub Actions",
     )
     args = parser.parse_args()
+
     timestamp = args.timestamp
 
-    # ----------------- 1) Load the trained model (compat name in ROOT) -----------------
-    model_filename = f"model_{timestamp}_dt_model.joblib"
-    model_path = model_filename  # root file, YAML moves it later
+    # ----------------- 1) Load model: model_<timestamp>_dt_model.joblib -----------------
+    try:
+        model_version = f"model_{timestamp}_dt_model"
+        model_path = f"{model_version}.joblib"
+        model = joblib.load(model_path)
+        print(f"[INFO] Loaded model from: {model_path}")
+    except Exception as e:
+        raise ValueError(f"Failed to load the latest model: {e}")
 
-    if not os.path.exists(model_path):
-        raise FileNotFoundError(f"Expected model file not found at: {model_path}")
+    # ----------------- 2) Load or create Breast Cancer dataset -----------------
+    data_dir = "data"
+    X_path = os.path.join(data_dir, "data.pickle")
+    y_path = os.path.join(data_dir, "target.pickle")
 
-    model = joblib.load(model_path)
-    print(f"[INFO] Loaded model from: {model_path}")
+    if os.path.exists(X_path) and os.path.exists(y_path):
+        # Use the same data saved during training
+        with open(X_path, "rb") as f:
+            X = pickle.load(f)
+        with open(y_path, "rb") as f:
+            y = pickle.load(f)
+        print("[INFO] Loaded X, y from existing pickle files.")
+    else:
+        # Fallback: load directly from sklearn and save for consistency
+        print("[INFO] Pickle files not found. Loading Breast Cancer dataset...")
+        bc = load_breast_cancer()
+        X = bc.data
+        y = bc.target
 
-    # ----------------- 2) Load dataset from pickles -----------------
-    data_path = os.path.join("data", "data.pickle")
-    target_path = os.path.join("data", "target.pickle")
+        os.makedirs(data_dir, exist_ok=True)
+        with open(X_path, "wb") as f:
+            pickle.dump(X, f)
+        with open(y_path, "wb") as f:
+            pickle.dump(y, f)
 
-    if not (os.path.exists(data_path) and os.path.exists(target_path)):
-        raise FileNotFoundError(
-            "data/data.pickle and/or data/target.pickle not found. "
-            "Make sure train_model.py has been run successfully."
-        )
+    print(f"[INFO] Data shape: X={X.shape}, y={y.shape}")
 
-    with open(data_path, "rb") as f_data:
-        X = pickle.load(f_data)
-    with open(target_path, "rb") as f_target:
-        y = pickle.load(f_target)
-
-    print(f"[INFO] Loaded X, y from pickle. X={X.shape}, y={y.shape}")
-
-    # ----------------- 3) Train/test split (same as train_model.py) -----------------
+    # ----------------- 3) Train/test split (same as in train_model.py) -----------------
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -58,7 +69,7 @@ if __name__ == "__main__":
         random_state=42,
     )
 
-    # ----------------- 4) Evaluate model on the test set -----------------
+    # ----------------- 4) Evaluate model -----------------
     y_pred = model.predict(X_test)
 
     f1 = f1_score(y_test, y_pred)
@@ -73,9 +84,14 @@ if __name__ == "__main__":
     print(f"[INFO] Evaluation metrics: {metrics}")
 
     # ----------------- 5) Save metrics JSON in CURRENT DIRECTORY -----------------
-    # This matches the YAML logic:
-    #  metrics_filename="${timestamp}_metrics.json"
-    #  mv $metrics_filename $GITHUB_WORKSPACE/metrics/$metrics_filename
+    # This matches your existing YAML, which does:
+    #   metrics_filename="${timestamp}_metrics.json"
+    #   mv $metrics_filename Labs/Github_Labs/Lab2/metrics/$metrics_filename
+
+    # (The 'metrics/' folder created below is just for local runs; CI moves the file.)
+
+    if not os.path.exists("metrics/"):
+        os.makedirs("metrics/")  # local convenience, not used by mv
 
     metrics_filename = f"{timestamp}_metrics.json"
     with open(metrics_filename, "w") as metrics_file:
