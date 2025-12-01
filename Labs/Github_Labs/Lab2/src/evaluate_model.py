@@ -12,7 +12,6 @@ sys.path.insert(0, os.path.abspath(".."))
 
 
 if __name__ == "__main__":
-    # ----------------- 1) Parse timestamp argument -----------------
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--timestamp",
@@ -23,22 +22,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     timestamp = args.timestamp
 
-    # ----------------- 2) Load the trained model -----------------
-    model_filename = f"model_{timestamp}_rf_pipeline.joblib"
-    model_path = os.path.join("models", model_filename)
+    # ----------------- 1) Load the trained model (compat name in ROOT) -----------------
+    model_filename = f"model_{timestamp}_dt_model.joblib"
+    model_path = model_filename  # root file, YAML moves it later
 
     if not os.path.exists(model_path):
-        raise FileNotFoundError(
-            f"Expected model file not found at: {model_path}"
-        )
+        raise FileNotFoundError(f"Expected model file not found at: {model_path}")
 
-    try:
-        model = joblib.load(model_path)
-        print(f"[INFO] Loaded model from: {model_path}")
-    except Exception as e:
-        raise ValueError(f"Failed to load model: {e}")
+    model = joblib.load(model_path)
+    print(f"[INFO] Loaded model from: {model_path}")
 
-    # ----------------- 3) Load dataset from pickle -----------------
+    # ----------------- 2) Load dataset from pickles -----------------
     data_path = os.path.join("data", "data.pickle")
     target_path = os.path.join("data", "target.pickle")
 
@@ -55,7 +49,7 @@ if __name__ == "__main__":
 
     print(f"[INFO] Loaded X, y from pickle. X={X.shape}, y={y.shape}")
 
-    # ----------------- 4) Train/test split (same as in train_model.py) -----------------
+    # ----------------- 3) Train/test split (same as train_model.py) -----------------
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -64,7 +58,7 @@ if __name__ == "__main__":
         random_state=42,
     )
 
-    # ----------------- 5) Evaluate model on the test set -----------------
+    # ----------------- 4) Evaluate model on the test set -----------------
     y_pred = model.predict(X_test)
 
     f1 = f1_score(y_test, y_pred)
@@ -78,6 +72,10 @@ if __name__ == "__main__":
 
     print(f"[INFO] Evaluation metrics: {metrics}")
 
+    # ----------------- 5) Save metrics JSON in CURRENT DIRECTORY -----------------
+    # This matches the YAML logic:
+    #  metrics_filename="${timestamp}_metrics.json"
+    #  mv $metrics_filename $GITHUB_WORKSPACE/metrics/$metrics_filename
 
     metrics_filename = f"{timestamp}_metrics.json"
     with open(metrics_filename, "w") as metrics_file:

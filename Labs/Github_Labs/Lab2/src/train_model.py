@@ -46,23 +46,21 @@ if __name__ == "__main__":
     print(f"[INFO] Hyperparameters -> max_depth={args.max_depth}, "
           f"n_estimators={args.n_estimators}")
 
-    #Load real dataset
-    # Breast Cancer Wisconsin dataset: binary classification (malignant vs benign)
+    # ----------------- 2) Load real dataset -----------------
     data = load_breast_cancer()
     X = data.data
     y = data.target
-    feature_names = data.feature_names
 
     print(f"[INFO] Loaded Breast Cancer dataset with shape: X={X.shape}, y={y.shape}")
 
-    #Save raw data artifacts
+    # ----------------- 3) Save raw data artifacts -----------------
     os.makedirs("data", exist_ok=True)
     with open("data/data.pickle", "wb") as f_data:
         pickle.dump(X, f_data)
     with open("data/target.pickle", "wb") as f_target:
         pickle.dump(y, f_target)
 
-    #Train / test split 
+    # ----------------- 4) Train / test split -----------------
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -71,7 +69,7 @@ if __name__ == "__main__":
         random_state=42,
     )
 
-    #Set up MLflow experiment
+    # ----------------- 5) Set up MLflow experiment -----------------
     mlflow.set_tracking_uri("./mlruns")
     dataset_name = "BreastCancerWisconsin"
     current_time = datetime.datetime.now().strftime("%y%m%d_%H%M%S")
@@ -82,7 +80,6 @@ if __name__ == "__main__":
         experiment_id=experiment_id,
         run_name=dataset_name,
     ):
-        # Log dataset and model parameters
         params = {
             "dataset_name": dataset_name,
             "n_samples_total": X.shape[0],
@@ -94,7 +91,7 @@ if __name__ == "__main__":
         }
         mlflow.log_params(params)
 
-        #Build pipeline & train model
+        # ----------------- 6) Build pipeline & train model -----------------
         pipeline = Pipeline(
             steps=[
                 ("scaler", StandardScaler()),
@@ -112,12 +109,9 @@ if __name__ == "__main__":
         pipeline.fit(X_train, y_train)
         print("[INFO] Model training completed.")
 
-        #Evaluate with default threshold 0.5
-        # For RandomForest, predict_proba returns probabilities for each class.
-        y_proba = pipeline.predict_proba(X_test)[:, 1]  # probability of positive class
+        # ----------------- 7) Evaluate with default threshold + best threshold -----------------
+        y_proba = pipeline.predict_proba(X_test)[:, 1]
         y_pred_default = (y_proba >= 0.5).astype(int)
-
-        # Also compute train metrics using standard predict
         y_pred_train = pipeline.predict(X_train)
 
         train_accuracy = accuracy_score(y_train, y_pred_train)
@@ -126,14 +120,12 @@ if __name__ == "__main__":
         test_accuracy_default = accuracy_score(y_test, y_pred_default)
         test_f1_default = f1_score(y_test, y_pred_default)
 
-        #Search best threshold for F1 on test set
         best_f1 = -1.0
         best_threshold = 0.5
 
         for thr in np.linspace(0.1, 0.9, 9):
             y_pred_thr = (y_proba >= thr).astype(int)
             f1_thr = f1_score(y_test, y_pred_thr)
-
             if f1_thr > best_f1:
                 best_f1 = f1_thr
                 best_threshold = thr
@@ -143,7 +135,6 @@ if __name__ == "__main__":
             f"Best F1={best_f1:.4f} at threshold={best_threshold:.2f}"
         )
 
-        #Log metrics to MLflow
         mlflow.log_metrics(
             {
                 "train_accuracy": train_accuracy,
@@ -155,12 +146,16 @@ if __name__ == "__main__":
         )
         mlflow.log_param("best_threshold", float(best_threshold))
 
-        #Save versioned model
+        # ----------------- 8) Save models -----------------
+
+        # (A) Your own versioned model in models/ (nice for your writeup)
         os.makedirs("models", exist_ok=True)
+        rf_model_path = os.path.join("models", f"model_{timestamp}_rf_pipeline.joblib")
+        dump(pipeline, rf_model_path)
+        print(f"[INFO] Saved RF pipeline model to: {rf_model_path}")
 
-        model_version = f"model_{timestamp}"
-        model_filename = f"{model_version}_rf_pipeline.joblib"
-        model_path = os.path.join("models", model_filename)
-
-        dump(pipeline, model_path)
-        print(f"[INFO] Saved trained model to: {model_path}")
+        # (B) Compatibility model for the existing YAML workflow:
+        #     it expects a file named: model_<timestamp>_dt_model.joblib in the ROOT.
+        compat_model_filename = f"model_{timestamp}_dt_model.joblib"
+        dump(pipeline, compat_model_filename)
+        print(f"[INFO] Saved compatibility model for YAML to: {compat_model_filename}")
