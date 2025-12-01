@@ -88,11 +88,13 @@ if __name__ == "__main__":
     #   metrics_filename="${timestamp}_metrics.json"
     #   mv $metrics_filename Labs/Github_Labs/Lab2/metrics/$metrics_filename
 
-    # (The 'metrics/' folder created below is just for local runs; CI moves the file.)
+    # Ensure the destination directory under repo root exists (for the mv in YAML)
+    workspace = os.getenv("GITHUB_WORKSPACE", os.getcwd())
+    lab2_metrics_dir = os.path.join(workspace, "Labs", "Github_Labs", "Lab2", "metrics")
+    os.makedirs(lab2_metrics_dir, exist_ok=True)
+    print(f"[INFO] Ensured metrics destination dir exists at: {lab2_metrics_dir}")
 
-    if not os.path.exists("metrics/"):
-        os.makedirs("metrics/")  # local convenience, not used by mv
-
+    # Save the metrics file in the current working directory
     metrics_filename = f"{timestamp}_metrics.json"
     with open(metrics_filename, "w") as metrics_file:
         json.dump(metrics, metrics_file, indent=4)

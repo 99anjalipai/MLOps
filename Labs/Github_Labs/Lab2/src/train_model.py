@@ -43,8 +43,10 @@ if __name__ == "__main__":
 
     timestamp = args.timestamp
     print(f"[INFO] Timestamp received from GitHub Actions: {timestamp}")
-    print(f"[INFO] Hyperparameters -> max_depth={args.max_depth}, "
-          f"n_estimators={args.n_estimators}")
+    print(
+        f"[INFO] Hyperparameters -> max_depth={args.max_depth}, "
+        f"n_estimators={args.n_estimators}"
+    )
 
     # ----------------- 2) Load real dataset -----------------
     data = load_breast_cancer()
@@ -148,7 +150,15 @@ if __name__ == "__main__":
 
         # ----------------- 8) Save models -----------------
 
-        # (A) Your own versioned model in models/ (nice for your writeup)
+        # Ensure the YAML mv destination dir for models exists at repo root
+        workspace = os.getenv("GITHUB_WORKSPACE", os.getcwd())
+        lab2_models_dir = os.path.join(
+            workspace, "Labs", "Github_Labs", "Lab2", "models"
+        )
+        os.makedirs(lab2_models_dir, exist_ok=True)
+        print(f"[INFO] Ensured models destination dir exists at: {lab2_models_dir}")
+
+        # (A) Your own versioned model in models/ (for your writeup)
         os.makedirs("models", exist_ok=True)
         rf_model_path = os.path.join("models", f"model_{timestamp}_rf_pipeline.joblib")
         dump(pipeline, rf_model_path)
