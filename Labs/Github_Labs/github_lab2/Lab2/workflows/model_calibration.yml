@@ -8,6 +8,10 @@ jobs:
   retrain:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: Github_Labs/github_lab2/Lab2
+      
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
