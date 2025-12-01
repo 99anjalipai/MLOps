@@ -2,16 +2,17 @@ name: Periodic Model Calibration
 
 on: 
   schedule:
-    - cron: '0 0 * * *'  #minutes, hours, day, month, day of week 
+    - cron: '0 0 * * *'  # runs daily at midnight UTC
 
 jobs:
-  retrain:
+  calibration:
     runs-on: ubuntu-latest
 
+    # Set working directory to your actual Lab 2 folder
     defaults:
       run:
-        working-directory: Github_Labs/github_lab2/Lab2
-      
+        working-directory: Github_Labs/github_lab2/Lab2  # <-- adjust if folder spelling differs
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
@@ -25,47 +26,38 @@ jobs:
       run: pip install -r requirements.txt
 
     - name: Generate and Store Timestamp
+      id: timestamp
       run: |
         timestamp=$(date '+%Y%m%d%H%M%S')
         echo "$timestamp" > timestamp.txt
-      id: timestamp 
+        echo "ts=$timestamp" >> $GITHUB_OUTPUT
 
     - name: Check File Permissions
-      run: |
-        ls -l ./src/train_model.py
-
-    - name: Set File Permissions
-      run: |
-        chmod +x ./src/train_model.py
+      run: ls -l ./src/train_model.py
 
     - name: Retrain Model
       run: |
-        timestamp=$(cat timestamp.txt) # Use the timestamp in your training script
+        timestamp=$(cat timestamp.txt)
         python ./src/train_model.py --timestamp "$timestamp"
 
     - name: Evaluate Model and Log Metrics
       run: |
-        timestamp=$(cat timestamp.txt) # Use the timestamp in your training script
-        python ./src/evaluate_model.py  --timestamp "$timestamp" # Assuming you have a script for model evaluation
-        metrics_filename="${timestamp}_metrics.json"
-        mv $metrics_filename $GITHUB_WORKSPACE/metrics/$metrics_filename
-      continue-on-error: false  # Continue even if evaluation fails
-
-    - name: Store and Version the New Model
-      run: |
         timestamp=$(cat timestamp.txt)
-        model_filename="model_${timestamp}_dt_model.joblib"
-        mv $model_filename $GITHUB_WORKSPACE/models/$model_filename
+        python ./src/evaluate_model.py --timestamp "$timestamp"
+      continue-on-error: false
+
+    # NOTE:
+    # train_model.py already saves models/ files
+    # evaluate_model.py already writes metrics/<timestamp>_metrics.json
+    # We only commit the folders — no moving/renaming needed.
 
     - name: Commit and Push Changes
       run: |
         git config --global user.email "26876927+raminmohammadi@users.noreply.github.com"
         git config --global user.name "raminmohammadi"
-        git add $GITHUB_WORKSPACE/metrics/$metrics_filename $GITHUB_WORKSPACE/models/$model_filename
-        git commit -m "Add metrics and updated model"
+
+        git add models metrics || echo "Nothing to add"
+        git commit -m "Periodic calibration run: updated model + metrics" || echo "No changes to commit"
         git push
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-
